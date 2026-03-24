@@ -9,7 +9,7 @@
     "restart": "pm2 restart arslan-pair"
   },
   "dependencies": {
-    "@whiskeysockets/baileys": "git+https://github.com/xhclintohn/Baileys",
+    "@whiskeysockets/baileys": "npm:wileys@^0.5.1",
     "@adiwajshing/keyed-db": "^0.2.4",
     "qrcode": "^1.5.3",
     "awesome-phonenumber": "^2.64.0",
