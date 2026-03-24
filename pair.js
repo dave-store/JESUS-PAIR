@@ -1,125 +1,270 @@
-const PastebinAPI = require('pastebin-js');
-const pastebin = new PastebinAPI('EMWTMkQAVfJa9kM-MRUrxd5Oku1U7pgL');
-const { makeid } = require('./id');
 const express = require('express');
 const fs = require('fs');
-let router = express.Router();
+const path = require('path');
 const pino = require('pino');
+const { makeid } = require('./id');
+
 const {
-    default: Mbuvi_Tech,
-    useMultiFileAuthState,
-    delay,
-    makeCacheableSignalKeyStore,
-    Browsers
+default: Toxic_Tech,
+useMultiFileAuthState,
+delay,
+makeCacheableSignalKeyStore,
+Browsers,
 } = require('@whiskeysockets/baileys');
 
-function removeFile(FilePath) {
-    if (!fs.existsSync(FilePath)) return false;
-    fs.rmSync(FilePath, { recursive: true, force: true });
+const router = express.Router();
+const sessionDir = path.join(__dirname, "temp");
+
+function removeFile(path) {
+if (fs.existsSync(path)) fs.rmSync(path, { recursive: true, force: true });
 }
 
 router.get('/', async (req, res) => {
-    const id = makeid();
-    let num = req.query.number;
-    
-    async function Mbuvi_MD_PAIR_CODE() {
-        const { state, saveCreds } = await useMultiFileAuthState('./temp/' + id);
-        try {
-            let Pair_Code_By_Mbuvi_Tech = Mbuvi_Tech({
-                auth: {
-                    creds: state.creds,
-                    keys: makeCacheableSignalKeyStore(state.keys, pino({ level: 'fatal' }).child({ level: 'fatal' })),
-                },
-                printQRInTerminal: false,
-                logger: pino({ level: 'fatal' }).child({ level: 'fatal' }),
-                browser: Browsers.macOS('Chrome')
-            });
+const id = makeid();
+const num = (req.query.number || '').replace(/[^0-9]/g, '');
+const tempDir = path.join(sessionDir, id);
+let responseSent = false;
+let sessionCleanedUp = false;
+let sessionSent = false;
 
-            if (!Pair_Code_By_Mbuvi_Tech.authState.creds.registered) {
-                await delay(1500);
-                num = num.replace(/[^0-9]/g, '');
-                const code = await Pair_Code_By_Mbuvi_Tech.requestPairingCode(num);
-                if (!res.headersSent) {
-                    await res.send({ code });
-                }
-            }
+async function cleanUpSession() {  
+    if (!sessionCleanedUp) {  
+        try {  
+            removeFile(tempDir);  
+        } catch (cleanupError) {  
+            console.error("Cleanup error:", cleanupError);  
+        }  
+        sessionCleanedUp = true;  
+    }  
+}  
 
-            Pair_Code_By_Mbuvi_Tech.ev.on('creds.update', saveCreds);
-            Pair_Code_By_Mbuvi_Tech.ev.on('connection.update', async (s) => {
-                const { connection, lastDisconnect } = s;
-                if (connection === 'open') {
-                    await delay(5000);
-                    let data = fs.readFileSync(__dirname + `/temp/${id}/creds.json`);
-                    await delay(800);
-                    let b64data = Buffer.from(data).toString('base64');
-                    let session = await Pair_Code_By_Mbuvi_Tech.sendMessage(Pair_Code_By_Mbuvi_Tech.user.id, { text: 'JESUS-CRASH-V2~' + b64data });
+async function startPairing() {  
+    try {  
+        const version = (await (await fetch('https://raw.githubusercontent.com/WhiskeySockets/Baileys/master/src/Defaults/baileys-version.json')).json()).version;  
+        const { state, saveCreds } = await useMultiFileAuthState(tempDir);  
 
-                    let Mbuvi_MD_TEXT = `
-        
-*╭━━━❰ 💎 *𝐉𝐄𝐒𝐔𝐒-𝐂𝐑𝐀𝐒𝐇-𝐕𝟐* 💎 ❱━━━╮
-┃
-┃ 🎉 *Welcome, ${userName}!* 
-┃ Your diamond session is now *ACTIVE*
-┃
-┣━━━❰ 🔐 *𝐒𝐄𝐒𝐒𝐈𝐎𝐍 𝐃𝐄𝐓𝐀𝐈𝐋𝐒* ❱━━━
-┃
-┃ 📅 *Date:* ${currentDate}
-┃ ⏰ *Time:* ${currentTime}
-┃ 🆔 *Status:* ✅ CONNECTED
-┃ 🔒 *Security:* MILITARY-GRADE
-┃
-┣━━━❰ ⚠️ *𝐒𝐄𝐂𝐔𝐑𝐈𝐓𝐘 𝐖𝐀𝐑𝐍𝐈𝐍𝐆* ❱━━━
-┃
-┃ 🔴 *DO NOT* share your Session ID
-┃ 🔴 *DO NOT* send it to anyone
-┃ 🔴 *DO NOT* post it publicly
-┃ 🟢 Store it in a *SAFE LOCATION*
-┃
-┣━━━❰ 🔗 *𝐎𝐅𝐅𝐈𝐂𝐈𝐀𝐋 𝐋𝐈𝐍𝐊𝐒* ❱━━━
-┃
-┃ 📢 *WhatsApp Channel:*
-┃ https://whatsapp.com/channel/0029Vb7J1Po4tRrqa88ZfQ3X
-┃
-┃ 🐙 *GitHub Repository:*
-┃ https://github.com/dave-store/JESUS-CRASH-V2
-┃
-┃ 💬 *Support Group:*
-┃ https://chat.whatsapp.com/...
-┃
-┣━━━❰ ⚡ *𝐅𝐄𝐀𝐓𝐔𝐑𝐄𝐒* ❱━━━
-┃
-┃ 🤖 Advanced AI Commands
-┃ 🛡️ Anti-Spam & Security
-┃ 📥 Media Downloader
-┃ 🎵 Audio/Video Tools
-┃ 🔄 Auto-Update System
-┃ 💎 Premium Support
-┃
-╰━━━❰ 👑 *𝐃𝐀𝐖𝐄𝐍𝐒 𝐁𝐎𝐘 𝐓𝐄𝐂𝐇* ❱━━━╯
+        const sock = Toxic_Tech({  
+            version,  
+            logger: pino({ level: 'fatal' }).child({ level: 'fatal' }),  
+            printQRInTerminal: false,  
+            auth: {  
+                creds: state.creds,  
+                keys: makeCacheableSignalKeyStore(state.keys, pino().child({ level: "silent", stream: 'store' }))  
+            },  
+            browser: Browsers.macOS("Chrome"),  
+            syncFullHistory: false,  
+            generateHighQualityLinkPreview: true,  
+            shouldIgnoreJid: jid => !!jid?.endsWith('@g.us'),  
+            getMessage: async () => undefined,  
+            markOnlineOnConnect: true,  
+            connectTimeoutMs: 120000,  
+            keepAliveIntervalMs: 30000,  
+            emitOwnEvents: true,  
+            fireInitQueries: true,  
+            defaultQueryTimeoutMs: 60000,  
+            transactionOpts: {  
+                maxCommitRetries: 10,  
+                delayBetweenTriesMs: 3000  
+            },  
+            retryRequestDelayMs: 10000  
+        });  
 
-> *"Stay cool and hack smart"* ✌🏻🔥
-> *© 2024 All Rights Reserved*`;
+        if (!sock.authState.creds.registered) {  
+            await delay(3000);   
+            const code = await sock.requestPairingCode(num);  
+            if (!responseSent && !res.headersSent) {  
+                res.json({ code: code });  
+                responseSent = true;  
+            }  
+        }  
 
-                    await Pair_Code_By_Mbuvi_Tech.sendMessage(Pair_Code_By_Mbuvi_Tech.user.id, { text: Toxic_MD_TEXT }, { quoted: session });
+        sock.ev.on('creds.update', saveCreds);  
 
-                    await delay(100);
-                    await Pair_Code_By_Mbuvi_Tech.ws.close();
-                    return await removeFile('./temp/' + id);
-                } else if (connection === 'close' && lastDisconnect && lastDisconnect.error && lastDisconnect.error.output.statusCode != 401) {
-                    await delay(10000);
-                    Mbuvi_MD_PAIR_CODE();
-                }
-            });
-        } catch (err) {
-            console.log('Service restarted');
-            await removeFile('./temp/' + id);
-            if (!res.headersSent) {
-                await res.send({ code: 'Service Currently Unavailable' });
-            }
-        }
-    }
-    
-    return await Mbuvi_MD_PAIR_CODE();
+        sock.ev.on('connection.update', async (update) => {  
+            const { connection, lastDisconnect } = update;  
+
+            if (connection === 'open') {
+                sessionSent = true;  
+                console.log('✅ JESUS-CRASH-V2 successfully connected to WhatsApp.');  
+                console.log('⏳ Waiting for session to sync and stabilize...');  
+
+                try {  
+                    await sock.sendMessage(sock.user.id, {  
+                        text: `
+
+◈━━━━━━━━━━━◈
+│❒ Hello! 👋 You're now connected to JESUS-CRASH-V2.
+
+│❒ Please wait a moment while we generate your session ID. It will be sent shortly... 🙂
+◈━━━━━━━━━━━◈
+`,
+});
+} catch (msgError) {
+console.log("Welcome message skipped, continuing...");
+}
+
+await delay(25000);  
+                console.log('⏳ Reading session data...');  
+
+                const credsPath = path.join(tempDir, "creds.json");  
+
+                let sessionData = null;  
+                let attempts = 0;  
+                const maxAttempts = 15;   
+
+                while (attempts < maxAttempts && !sessionData) {  
+                    try {  
+                        if (fs.existsSync(credsPath)) {  
+                            const data = fs.readFileSync(credsPath);  
+
+                            if (data && data.length > 100) {   
+                                sessionData = data;  
+                                console.log(`✅ Session data found (${data.length} bytes) on attempt ${attempts + 1}`);  
+                                break;  
+                            } else {  
+                                console.log(`⚠️ Session file exists but size is small: ${data?.length || 0} bytes`);  
+                            }  
+                        } else {  
+                            console.log(`⚠️ Session file not found yet, attempt ${attempts + 1}/${maxAttempts}`);  
+                        }  
+
+                        await delay(6000);  
+                        attempts++;  
+                    } catch (readError) {  
+                        console.error("Read attempt error:", readError);  
+                        await delay(3000);   
+                        attempts++;  
+                    }  
+                }  
+
+                if (!sessionData) {  
+                    console.error("Failed to read session data after all attempts");  
+                    try {  
+                        await sock.sendMessage(sock.user.id, {  
+                            text: "Failed to generate session. Please try again."  
+                        });  
+                    } catch (e) {}  
+                    await cleanUpSession();  
+                    sock.ws.close();  
+                    return;  
+                }  
+
+                const base64 = Buffer.from(sessionData).toString('base64');  
+                console.log('✅ Session data encoded to base64');  
+
+                try {  
+                    console.log('📤 Sending session data to user...');  
+                    const sentSession = await sock.sendMessage(sock.user.id, {  
+                        text: base64  
+                    });  
+
+                    await delay(3000);  
+
+                    const infoMessage = `
+
+◈━━━━━━━━━━━◈
+SESSION CONNECTED
+
+│❒ The long code above is your Session ID. Please copy and store it safely, as you'll need it to deploy your Toxic-MD bot! 🔐
+
+│❒ Need help? Reach out to us:
+
+『••• Visit For Help •••』
+
+> Owner:
+https://wa.me/254735342808
+
+
+
+> WaGroup:
+https://chat.whatsapp.com/GoXKLVJgTAAC3556FXkfFI
+
+
+
+> WaChannel:
+https://whatsapp.com/channel/0029VagJlnG6xCSU2tS1Vz19
+
+
+
+> Instagram:
+https://www.instagram.com/xh_clinton
+
+
+
+> BotRepo:
+https://github.com/xhclintohn/Toxic-MD
+
+
+
+│❒ Don't forget to give a ⭐ to our repo and fork it to stay updated! :)
+◈━━━━━━━━━━━◈`;
+
+console.log('📤 Sending information message...');  
+                    await sock.sendMessage(sock.user.id, { text: infoMessage }, { quoted: sentSession });  
+
+                    console.log('⏳ Finalizing session...');  
+                    await delay(5000);  
+
+                    console.log('✅ Session completed, closing connection...');  
+                    sock.ws.close();  
+                    await cleanUpSession();  
+
+                } catch (sendError) {  
+                    console.error("Error sending session:", sendError);  
+                    await cleanUpSession();  
+                    sock.ws.close();  
+                }  
+
+            } else if (connection === "close") {
+                if (sessionSent) return;  
+                if (lastDisconnect?.error?.output?.statusCode !== 401) {  
+                    console.log('⚠️ Connection closed, attempting to reconnect...');  
+                    await delay(15000);   
+                    startPairing();  
+                } else {  
+                    console.log('❌ Connection closed permanently');  
+                    await cleanUpSession();  
+                }  
+            } else if (connection === "connecting") {  
+                console.log('⏳ Connecting to WhatsApp...');  
+            }  
+        });  
+
+        sock.ev.on('connection.update', (update) => {  
+            if (update.qr) {  
+                console.log("QR code received");  
+            }  
+            if (update.connection === "close") {  
+                console.log("Connection closed event");  
+            }  
+        });  
+
+    } catch (err) {  
+        console.error('❌ Error during pairing:', err);  
+        await cleanUpSession();  
+        if (!responseSent && !res.headersSent) {  
+            res.status(500).json({ code: 'Service Unavailable. Please try again.' });  
+            responseSent = true;  
+        }  
+    }  
+}  
+
+const timeoutPromise = new Promise((_, reject) => {  
+    setTimeout(() => {  
+        reject(new Error("Pairing process timeout"));  
+    }, 300000);  
+});  
+
+try {  
+    await Promise.race([startPairing(), timeoutPromise]);  
+} catch (finalError) {  
+    console.error("Final error:", finalError);  
+    await cleanUpSession();  
+    if (!responseSent && !res.headersSent) {  
+        res.status(500).json({ code: "Service Error - Timeout" });  
+    }  
+}
+
 });
 
 module.exports = router;
